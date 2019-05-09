@@ -4,6 +4,7 @@
 2D Controller Class to be used for the CARLA waypoint follower demo.
 """
 
+from math import sqrt, atan2, sin, cos
 import cutils
 import numpy as np
 
@@ -114,6 +115,9 @@ class Controller2D(object):
             throttle_output = 0.5 * self.vars.v_previous
         """
         self.vars.create_var('v_previous', 0.0)
+        self.vars.create_var('v_total_error', 0.0)
+        self.vars.create_var('v_previous_error', 0.0)
+        self.vars.create_var('t_previous', 0.0)
 
         # Skip the first frame to store previous values properly
         if self._start_control_loop:
@@ -163,7 +167,18 @@ class Controller2D(object):
             # Change these outputs with the longitudinal controller. Note that
             # brake_output is optional and is not required to pass the
             # assignment, as the car will naturally slow down over time.
-            throttle_output = 0
+            Kp_throttle = 2
+            Ki_throttle = 1
+            Kd_throttle = 0.5
+
+            dt = t - self.vars.t_previous
+            v_current_error = v_desired - v
+            v_total_error = self.vars.v_total_error + v_current_error * dt
+            v_error_rate = (v_current_error - self.vars.v_previous_error) / dt
+            P_throttle = Kp_throttle * v_current_error
+            I_throttle = Ki_throttle * v_total_error
+            D_throttle = Kd_throttle * v_error_rate
+            throttle_output = P_throttle + I_throttle + D_throttle
             brake_output    = 0
 
             ######################################################
@@ -176,9 +191,25 @@ class Controller2D(object):
                 access the persistent variables declared above here. For
                 example, can treat self.vars.v_previous like a "global variable".
             """
-            
-            # Change the steer output with the lateral controller. 
-            steer_output    = 0
+            Kp_ld = 0.8
+            min_ld = 10
+            L = 3
+
+            x_rear = x - L * cos(yaw) / 2
+            y_rear = y - L * sin(yaw) / 2
+            lookahead_distance = max(min_ld, Kp_ld * v)
+            print(lookahead_distance)
+            for wp in waypoints:
+                dist = sqrt((wp[0] - x_rear)**2 + (wp[1] - y)**2)
+                if dist > lookahead_distance:
+                    carrot = wp
+                    break
+            else:
+                carrot = waypoints[0]
+            alpha = atan2(carrot[1] - y_rear, carrot[0] - x_rear) - yaw
+
+            # Change the steer output with the lateral controller.
+            steer_output    = atan2(2 * L * sin(alpha), lookahead_distance)
 
             ######################################################
             # SET CONTROLS OUTPUT
@@ -198,3 +229,6 @@ class Controller2D(object):
             in the next iteration)
         """
         self.vars.v_previous = v  # Store forward speed to be used in next step
+        self.vars.v_total_error = v_total_error
+        self.vars.v_previous_error = v_current_error
+        self.vars.t_previous = t
