@@ -719,50 +719,50 @@ def exec_waypoint_nav_demo(args):
 
                 # TODO: Uncomment each code block between the dashed lines to run the planner.
                 # --------------------------------------------------------------
-                #  # Compute open loop speed estimate.
-                #  open_loop_speed = lp._velocity_planner.get_open_loop_speed(current_timestamp - prev_timestamp)
+                # Compute open loop speed estimate.
+                open_loop_speed = lp._velocity_planner.get_open_loop_speed(current_timestamp - prev_timestamp)
 
-                #  # Calculate the goal state set in the local frame for the local planner.
-                #  # Current speed should be open loop for the velocity profile generation.
-                #  ego_state = [current_x, current_y, current_yaw, open_loop_speed]
+                # Calculate the goal state set in the local frame for the local planner.
+                # Current speed should be open loop for the velocity profile generation.
+                ego_state = [current_x, current_y, current_yaw, open_loop_speed]
 
-                #  # Set lookahead based on current speed.
-                #  bp.set_lookahead(BP_LOOKAHEAD_BASE + BP_LOOKAHEAD_TIME * open_loop_speed)
+                # Set lookahead based on current speed.
+                bp.set_lookahead(BP_LOOKAHEAD_BASE + BP_LOOKAHEAD_TIME * open_loop_speed)
 
-                #  # Perform a state transition in the behavioural planner.
-                #  bp.transition_state(waypoints, ego_state, current_speed)
+                # Perform a state transition in the behavioural planner.
+                bp.transition_state(waypoints, ego_state, current_speed)
 
-                #  # Check to see if we need to follow the lead vehicle.
-                #  bp.check_for_lead_vehicle(ego_state, lead_car_pos[1])
+                # Check to see if we need to follow the lead vehicle.
+                bp.check_for_lead_vehicle(ego_state, lead_car_pos[1])
 
-                #  # Compute the goal state set from the behavioural planner's computed goal state.
-                #  goal_state_set = lp.get_goal_state_set(bp._goal_index, bp._goal_state, waypoints, ego_state)
+                # Compute the goal state set from the behavioural planner's computed goal state.
+                goal_state_set = lp.get_goal_state_set(bp._goal_index, bp._goal_state, waypoints, ego_state)
 
-                #  # Calculate planned paths in the local frame.
-                #  paths, path_validity = lp.plan_paths(goal_state_set)
+                # Calculate planned paths in the local frame.
+                paths, path_validity = lp.plan_paths(goal_state_set)
 
-                #  # Transform those paths back to the global frame.
-                #  paths = local_planner.transform_paths(paths, ego_state)
+                # Transform those paths back to the global frame.
+                paths = local_planner.transform_paths(paths, ego_state)
 
-                #  # Perform collision checking.
-                #  collision_check_array = lp._collision_checker.collision_check(paths, [parkedcar_box_pts])
+                # Perform collision checking.
+                collision_check_array = lp._collision_checker.collision_check(paths, [parkedcar_box_pts])
 
-                #  # Compute the best local path.
-                #  best_index = lp._collision_checker.select_best_path_index(paths, collision_check_array, bp._goal_state)
-                #  # If no path was feasible, continue to follow the previous best path.
-                #  if best_index == None:
-                #      best_path = lp._prev_best_path
-                #  else:
-                #      best_path = paths[best_index]
-                #      lp._prev_best_path = best_path
+                # Compute the best local path.
+                best_index = lp._collision_checker.select_best_path_index(paths, collision_check_array, bp._goal_state)
+                # If no path was feasible, continue to follow the previous best path.
+                if best_index == None:
+                    best_path = lp._prev_best_path
+                else:
+                    best_path = paths[best_index]
+                    lp._prev_best_path = best_path
 
-                #  # Compute the velocity profile for the path, and compute the waypoints.
-                #  # Use the lead vehicle to inform the velocity profile's dynamic obstacle handling.
-                #  # In this scenario, the only dynamic obstacle is the lead vehicle at index 1.
-                #  desired_speed = bp._goal_state[2]
-                #  lead_car_state = [lead_car_pos[1][0], lead_car_pos[1][1], lead_car_speed[1]]
-                #  decelerate_to_stop = bp._state == behavioural_planner.DECELERATE_TO_STOP
-                #  local_waypoints = lp._velocity_planner.compute_velocity_profile(best_path, desired_speed, ego_state, current_speed, decelerate_to_stop, lead_car_state, bp._follow_lead_vehicle)
+                # Compute the velocity profile for the path, and compute the waypoints.
+                # Use the lead vehicle to inform the velocity profile's dynamic obstacle handling.
+                # In this scenario, the only dynamic obstacle is the lead vehicle at index 1.
+                desired_speed = bp._goal_state[2]
+                lead_car_state = [lead_car_pos[1][0], lead_car_pos[1][1], lead_car_speed[1]]
+                decelerate_to_stop = bp._state == behavioural_planner.DECELERATE_TO_STOP
+                local_waypoints = lp._velocity_planner.compute_velocity_profile(best_path, desired_speed, ego_state, current_speed, decelerate_to_stop, lead_car_state, bp._follow_lead_vehicle)
                 # --------------------------------------------------------------
 
                 if local_waypoints != None:
